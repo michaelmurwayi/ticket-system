@@ -13,11 +13,13 @@ from app.models import Ticket
 from app.serializers import TicketSerializer
 from app.services.ticket_service import TicketService
 from app.utilitis.responses import success_response
+from app.pagination import TicketPagination
 
 
 class TicketViewSet(ModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = TicketPagination
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     queryset = Ticket.objects.none()
@@ -25,7 +27,7 @@ class TicketViewSet(ModelViewSet):
     def get_queryset(self):
         if self.action in ("list", "statistics"):
             return TicketService.list_tickets(
-                params=self.request.query_params
+                params=self.request.query_params # type: ignore
             )
         return Ticket.objects.select_related("created_by").all()
 
