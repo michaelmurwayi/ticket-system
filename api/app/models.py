@@ -35,7 +35,7 @@ class Ticket(models.Model):
         
     )
     created_by = models.ForeignKey(
-        settings.Auth_USER_MODEL,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
     created_at = models.DateField(auto_now_add=True)
