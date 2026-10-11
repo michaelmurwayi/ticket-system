@@ -2,39 +2,26 @@ import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
+import Link from '@mui/material/Link'
 import { LoginForm } from '../components/organisms/LoginForm'
+import {
+  authAlertSx,
+  authButtonSx,
+  authCardSx,
+  authFieldSx,
+  authFormSx,
+  authLinkSx,
+  authPageSx,
+  authTitleSx,
+} from './authStyles'
 
 export default function LoginPage() {
   return (
-    <Box
-      sx={{
-        minHeight: '100svh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        px: { xs: 2, sm: 3 },
-        py: { xs: 4, sm: 8 },
-        bgcolor: 'background.default',
-      }}
-    >
+    <Box sx={authPageSx}>
       <Container maxWidth="xs" disableGutters>
-        <Paper
-          elevation={3}
-          sx={{
-            p: { xs: 3, sm: 5 },
-            borderRadius: 3,
-          }}
-        >
+        <Paper elevation={3} sx={authCardSx}>
           <Box sx={{ mb: { xs: 3, sm: 4 }, textAlign: 'center' }}>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{
-                fontWeight: 700,
-                fontSize: { xs: '1.75rem', sm: '2.125rem' },
-                color: '#d4af37',
-              }}
-            >
+            <Typography variant="h4" component="h1" sx={authTitleSx}>
               Welcome back
             </Typography>
             <Typography
@@ -47,29 +34,24 @@ export default function LoginPage() {
           </Box>
 
           <LoginForm
-            formSx={{ gap: { xs: 2, sm: 2.5 } }}
-            fieldSx={{ '& .MuiInputBase-root': { fontSize: { xs: '0.95rem', sm: '1rem' } } }}
-            alertSx={{ fontSize: { xs: '0.85rem', sm: '0.9rem' }, alignItems: 'center' }}
-            buttonSx={{
-              py: { xs: 1.25, sm: 1.5 },
-              bgcolor: '#000000',
-              color: '#d4af37',
-              border: '2px solid #ffffff',
-              '&:hover': {
-                bgcolor: '#43a047',
-                color: '#ffffff',
-                borderColor: '#43a047',
-              },
-              '&.Mui-disabled': {
-                bgcolor: '#000000',
-                color: '#8a8a8a',
-                border: '2px solid #ffffff',
-              },
-            }}
+            formSx={authFormSx}
+            fieldSx={authFieldSx}
+            alertSx={authAlertSx}
+            buttonSx={authButtonSx}
           />
+
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" underline="hover" sx={authLinkSx}>
+                Sign up
+              </Link>
+            </Typography>
+          </Box>
         </Paper>
       </Container>
     </Box>
   )
 }
+
 

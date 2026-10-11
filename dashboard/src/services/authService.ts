@@ -125,6 +125,29 @@ export async function apiRequest<T = unknown>(
   return data as T
 }
 
+export interface SignupRequest {
+  username: string
+  email: string
+  password: string
+  re_password: string
+}
+
+/**
+ * Registers a new account at the backend's register endpoint
+ * (`/auth/register/`). Expects `username`, `email`, `password`, and
+ * `re_password`. If your backend uses different field names, adjust the
+ * SignupRequest shape accordingly.
+ */
+export async function signupRequest(
+  payload: SignupRequest,
+): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/auth/register/', {
+    method: 'POST',
+    body: payload,
+    credentials: null, // no auth needed to create an account
+  })
+}
+
 /**
  * Calls the login endpoint. Credentials are sent in the JSON body (per the
  * endpoint contract) — the Basic Auth header is intentionally omitted here.
