@@ -5,7 +5,6 @@ from rest_framework import serializers
 User = get_user_model()
 
 #  User registration serializer
-
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
