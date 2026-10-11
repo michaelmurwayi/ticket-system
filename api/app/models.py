@@ -30,6 +30,10 @@ class Ticket(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["priority", "-created_at"]),
+        ]
 
     def _str_(self):
         return self.title
