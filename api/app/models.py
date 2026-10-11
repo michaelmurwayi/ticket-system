@@ -1,3 +1,6 @@
+import uuid
+
+from django.conf import settings
 from django.db import models
 
 # Create your models here.
@@ -12,6 +15,11 @@ class Ticket(models.Model):
         MEDIUM = "medium", "MEDIUM"
         HIGH = "high", "HIGH"
 
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
     status = models.CharField(
@@ -25,6 +33,10 @@ class Ticket(models.Model):
         choices=Priority.choices,
         default=Status.OPEN,
         
+    )
+    created_by = models.ForeignKey(
+        settings.Auth_USER_MODEL,
+        on_delete=models.CASCADE
     )
     created_at = models.DateField(auto_now_add=True)
 
