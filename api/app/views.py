@@ -27,7 +27,6 @@ class TicketViewSet(ModelViewSet):
             return TicketService.list_tickets(
                 params=self.request.query_params
             )
-
         return Ticket.objects.select_related("created_by").all()
 
     def create(self, request, *args, **kwargs):
