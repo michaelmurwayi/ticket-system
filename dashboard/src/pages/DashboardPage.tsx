@@ -19,11 +19,13 @@ import {
 } from '../components/molecules/TicketFilters'
 import { TicketsTable } from '../components/organisms/TicketsTable'
 import { CreateTicketDialog } from '../components/organisms/CreateTicketDialog'
+import { EditTicketDialog } from '../components/organisms/EditTicketDialog'
 import { fetchStatistics } from '../store/slices/statisticsSlice'
 import { fetchTickets } from '../store/slices/ticketsSlice'
 import { logout } from '../store/slices/authSlice'
 import { priorityMeta, statusMeta } from '../theme'
 import { useAppDispatch, useAppSelector } from '../store'
+import type { Ticket } from '../services/ticketService'
 
 const ACCENT = {
   total: '#d4af37', // gold
@@ -61,6 +63,7 @@ export default function DashboardPage() {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {
@@ -258,12 +261,21 @@ export default function DashboardPage() {
           </Alert>
         )}
 
-        <TicketsTable tickets={filteredTickets} loading={ticketsLoading} />
+        <TicketsTable
+          tickets={filteredTickets}
+          loading={ticketsLoading}
+          onEdit={setEditingTicket}
+        />
       </Container>
 
       <CreateTicketDialog
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+      />
+      <EditTicketDialog
+        open={editingTicket !== null}
+        ticket={editingTicket}
+        onClose={() => setEditingTicket(null)}
       />
     </Box>
   )

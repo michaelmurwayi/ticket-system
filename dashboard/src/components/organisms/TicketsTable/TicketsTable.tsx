@@ -9,6 +9,8 @@ import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Box from '@mui/material/Box'
+import IconButton from '@mui/material/IconButton'
+import EditIcon from '@mui/icons-material/Edit'
 import { PriorityChip } from '../../molecules/PriorityChip'
 import { StatusChip } from '../../molecules/StatusChip'
 import type { Ticket } from '../../../services/ticketService'
@@ -16,6 +18,7 @@ import type { Ticket } from '../../../services/ticketService'
 interface TicketsTableProps {
   tickets: Ticket[]
   loading?: boolean
+  onEdit?: (ticket: Ticket) => void
   sx?: SxProps<Theme>
 }
 
@@ -29,6 +32,7 @@ function formatDate(value?: string): string {
 export default function TicketsTable({
   tickets,
   loading = false,
+  onEdit,
   sx,
 }: TicketsTableProps) {
   if (loading) {
@@ -60,6 +64,7 @@ export default function TicketsTable({
             <TableCell>Status</TableCell>
             <TableCell>Priority</TableCell>
             <TableCell align="right">Created</TableCell>
+            {onEdit && <TableCell align="right">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -76,6 +81,18 @@ export default function TicketsTable({
               <TableCell align="right">
                 {formatDate(ticket.created_at)}
               </TableCell>
+              {onEdit && (
+                <TableCell align="right">
+                  <IconButton
+                    aria-label={`Edit ticket ${ticket.id}`}
+                    size="small"
+                    onClick={() => onEdit(ticket)}
+                    sx={{ color: '#d4af37' }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

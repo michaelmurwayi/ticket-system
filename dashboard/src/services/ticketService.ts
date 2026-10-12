@@ -70,3 +70,49 @@ export async function createTicket(payload: NewTicketInput): Promise<Ticket> {
   return (response.data ?? response) as Ticket
 }
 
+/**
+ * Fields editable via the general ticket endpoint. Status is intentionally
+ * excluded — it is updated through the dedicated status endpoint.
+ */
+export interface UpdateTicketInput {
+  title: string
+  description: string
+  priority: TicketPriority
+}
+
+/**
+ * Updates a ticket's general fields via PATCH /api/tickets/{id}/.
+ * Does NOT include status (see updateTicketStatus).
+ */
+export async function updateTicket(
+  id: Ticket['id'],
+  payload: UpdateTicketInput,
+): Promise<Ticket> {
+  const response = await apiRequest<{ data?: Ticket } & Ticket>(
+    `/tickets/${id}/`,
+    {
+      method: 'PATCH',
+      body: payload,
+    },
+  )
+  return (response.data ?? response) as Ticket
+}
+
+/**
+ * Updates only a ticket's status via the dedicated endpoint
+ * PATCH /api/tickets/{id}/status/ with body `{ status }`.
+ */
+export async function updateTicketStatus(
+  id: Ticket['id'],
+  status: TicketStatus,
+): Promise<Ticket> {
+  const response = await apiRequest<{ data?: Ticket } & Ticket>(
+    `/tickets/${id}/status/`,
+    {
+      method: 'PATCH',
+      body: { status },
+    },
+  )
+  return (response.data ?? response) as Ticket
+}
+
