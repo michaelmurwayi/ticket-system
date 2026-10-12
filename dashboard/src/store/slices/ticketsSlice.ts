@@ -1,19 +1,6 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-
-import type { TicketStatus } from '../types'
-
-export interface Ticket {
-  id: string
-  title: string
-  description: string
-  status: TicketStatus
-  createdAt: string
-}
-
-export interface NewTicketInput {
-  title: string
-  description: string
-}
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { ApiError } from '../../services/authService'
+import { getTickets, type Ticket } from '../../services/ticketService'
 
 export interface TicketsState {
   items: Ticket[]
@@ -27,46 +14,43 @@ const initialState: TicketsState = {
   error: null,
 }
 
-let ticketId = 0
-const nextId = () => `ticket-${++ticketId}`
+/** Loads the full ticket list from the backend. */
+export const fetchTickets = createAsyncThunk<
+  Ticket[],
+  void,
+  { rejectValue: string }
+>('tickets/fetchAll', async (_, { rejectWithValue }) => {
+  try {
+    return await getTickets()
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return rejectWithValue(error.message)
+    }
+    return rejectWithValue('Failed to load tickets.')
+  }
+})
 
 const ticketsSlice = createSlice({
   name: 'tickets',
   initialState,
-  reducers: {
-
-    addTicket: {
-      reducer(state, action: PayloadAction<Ticket>) {
-        state.items.push(action.payload)
-      },
-      prepare({ title, description }: NewTicketInput) {
-        return {
-          payload: {
-            id: nextId(),
-            title,
-            description,
-            status: 'open' as TicketStatus,
-            createdAt: new Date().toISOString(),
-          },
-        }
-      },
-    },
-    updateTicketStatus(
-      state,
-      action: PayloadAction<{ id: string; status: TicketStatus }>,
-    ) {
-      const ticket = state.items.find((item) => item.id === action.payload.id)
-      if (ticket) {
-        ticket.status = action.payload.status
-      }
-    },
-    removeTicket(state, action: PayloadAction<string>) {
-      state.items = state.items.filter((item) => item.id !== action.payload)
-    },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTickets.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(fetchTickets.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        state.items = action.payload
+        state.error = null
+      })
+      .addCase(fetchTickets.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.payload ?? 'Failed to load tickets.'
+      })
   },
 })
 
-export const { addTicket, updateTicketStatus, removeTicket } =
-  ticketsSlice.actions
-
 export default ticketsSlice.reducer
+
