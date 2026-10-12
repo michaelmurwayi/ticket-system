@@ -48,3 +48,25 @@ export async function getTickets(): Promise<Ticket[]> {
   return response.data ?? response.results ?? []
 }
 
+export interface NewTicketInput {
+  title: string
+  description: string
+  priority: TicketPriority
+  status: TicketStatus
+}
+
+/**
+ * Creates a new ticket via POST /api/tickets/.
+ *
+ * NOTE: field names (`title`, `description`, `priority`, `status`) follow the
+ * shape returned by the list endpoint. If your backend expects different
+ * names, adjust NewTicketInput accordingly.
+ */
+export async function createTicket(payload: NewTicketInput): Promise<Ticket> {
+  const response = await apiRequest<{ data?: Ticket } & Ticket>('/tickets/', {
+    method: 'POST',
+    body: payload,
+  })
+  return (response.data ?? response) as Ticket
+}
+

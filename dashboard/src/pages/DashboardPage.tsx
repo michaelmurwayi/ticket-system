@@ -9,6 +9,7 @@ import Button from '@mui/material/Button'
 import Divider from '@mui/material/Divider'
 import CircularProgress from '@mui/material/CircularProgress'
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber'
+import AddIcon from '@mui/icons-material/Add'
 import { StatCard } from '../components/molecules/StatCard'
 import { Legend } from '../components/molecules/Legend'
 import {
@@ -17,6 +18,7 @@ import {
   type StatusFilter,
 } from '../components/molecules/TicketFilters'
 import { TicketsTable } from '../components/organisms/TicketsTable'
+import { CreateTicketDialog } from '../components/organisms/CreateTicketDialog'
 import { fetchStatistics } from '../store/slices/statisticsSlice'
 import { fetchTickets } from '../store/slices/ticketsSlice'
 import { logout } from '../store/slices/authSlice'
@@ -58,6 +60,7 @@ export default function DashboardPage() {
 
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {
@@ -196,19 +199,45 @@ export default function DashboardPage() {
               </Typography>
             )}
           </Box>
-          <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Legend title="Priority" items={priorityItems} />
-            <Legend title="Status" items={statusItems} />
-          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsCreateOpen(true)}
+            sx={{
+              bgcolor: '#000000',
+              color: '#d4af37',
+              border: '2px solid #ffffff',
+              '&:hover': {
+                bgcolor: '#43a047',
+                color: '#ffffff',
+                borderColor: '#43a047',
+              },
+            }}
+          >
+            New Ticket
+          </Button>
         </Box>
 
-        <Box sx={{ mb: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+            mb: 3,
+          }}
+        >
           <TicketFilters
             priority={priorityFilter}
             status={statusFilter}
             onPriorityChange={setPriorityFilter}
             onStatusChange={setStatusFilter}
           />
+          <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <Legend title="Priority" items={priorityItems} />
+            <Legend title="Status" items={statusItems} />
+          </Box>
         </Box>
 
         {ticketsStatus === 'failed' && (
@@ -231,6 +260,11 @@ export default function DashboardPage() {
 
         <TicketsTable tickets={filteredTickets} loading={ticketsLoading} />
       </Container>
+
+      <CreateTicketDialog
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+      />
     </Box>
   )
 }

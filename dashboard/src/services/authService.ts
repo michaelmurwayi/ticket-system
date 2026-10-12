@@ -4,6 +4,7 @@ import {
   loadCredentials,
   type StoredCredentials,
 } from './authStorage'
+import { getCsrfToken, isUnsafeMethod } from './csrf'
 
 export interface LoginRequest {
   username: string
@@ -96,12 +97,21 @@ export async function apiRequest<T = unknown>(
   if (auth) {
     requestHeaders.Authorization = buildBasicAuthHeader(auth)
   }
+  // Django's SessionAuthentication requires a CSRF token on unsafe methods.
+  if (isUnsafeMethod(method)) {
+    const csrfToken = getCsrfToken()
+    if (csrfToken) {
+      requestHeaders['X-CSRFToken'] = csrfToken
+    }
+  }
 
   let response: Response
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers: requestHeaders,
+      // Send cookies (sessionid + csrftoken) so session auth works.
+      credentials: 'include',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
