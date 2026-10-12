@@ -4,7 +4,7 @@ from django.utils.decorators import method_decorator
 
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -22,7 +22,7 @@ class TicketViewSet(ModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = TicketPagination
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     permission_classes = [
         IsAuthenticated,
         IsTicketOwnerOrReadOnly,
@@ -104,6 +104,19 @@ class TicketViewSet(ModelViewSet):
         return success_response(
             data=self.get_serializer(ticket).data,
             message="Ticket updated successfully.",
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Only superusers can delete tickets.")
+
+        instance = self.get_object()
+        instance.delete()
+
+        return success_response(
+            data=None,
+            message="Ticket deleted successfully.",
+            status_code=status.HTTP_200_OK,
         )
 
     @action(detail=True, methods=["patch"], url_path="status")
