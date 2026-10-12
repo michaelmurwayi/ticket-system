@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-# Create your views here.
+from django.utils.decorators import method_decorator
 
 from rest_framework import status
 from rest_framework.decorators import action
@@ -8,19 +8,25 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-
+ 
 from app.models import Ticket
 from app.serializers import TicketSerializer
 from app.services.ticket_service import TicketService
 from app.utilitis.responses import success_response
 from app.pagination import TicketPagination
-
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authentication import SessionAuthentication
+from app.permissions import IsTicketOwnerOrReadOnly, SAFE_METHODS
 
 class TicketViewSet(ModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = TicketPagination
     http_method_names = ["get", "post", "patch", "head", "options"]
+    permission_classes = [
+        IsAuthenticated,
+        IsTicketOwnerOrReadOnly,
+    ]
 
     queryset = Ticket.objects.none()
 
@@ -30,7 +36,7 @@ class TicketViewSet(ModelViewSet):
                 params=self.request.query_params # type: ignore
             )
         return Ticket.objects.select_related("created_by").all()
-
+    
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

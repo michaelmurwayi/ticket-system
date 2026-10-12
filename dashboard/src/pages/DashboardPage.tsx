@@ -20,6 +20,7 @@ import {
 import { TicketsTable } from '../components/organisms/TicketsTable'
 import { CreateTicketDialog } from '../components/organisms/CreateTicketDialog'
 import { EditTicketDialog } from '../components/organisms/EditTicketDialog'
+import { TicketDetailDialog } from '../components/organisms/TicketDetailDialog'
 import { fetchStatistics } from '../store/slices/statisticsSlice'
 import { fetchTickets } from '../store/slices/ticketsSlice'
 import { logout } from '../store/slices/authSlice'
@@ -64,6 +65,7 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
+  const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null)
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {
@@ -264,6 +266,7 @@ export default function DashboardPage() {
         <TicketsTable
           tickets={filteredTickets}
           loading={ticketsLoading}
+          onView={setViewingTicket}
           onEdit={setEditingTicket}
         />
       </Container>
@@ -276,6 +279,11 @@ export default function DashboardPage() {
         open={editingTicket !== null}
         ticket={editingTicket}
         onClose={() => setEditingTicket(null)}
+      />
+      <TicketDetailDialog
+        open={viewingTicket !== null}
+        ticket={viewingTicket}
+        onClose={() => setViewingTicket(null)}
       />
     </Box>
   )

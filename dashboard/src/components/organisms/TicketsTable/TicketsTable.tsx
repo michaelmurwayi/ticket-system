@@ -11,6 +11,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import EditIcon from '@mui/icons-material/Edit'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import { PriorityChip } from '../../molecules/PriorityChip'
 import { StatusChip } from '../../molecules/StatusChip'
 import type { Ticket } from '../../../services/ticketService'
@@ -19,6 +20,7 @@ interface TicketsTableProps {
   tickets: Ticket[]
   loading?: boolean
   onEdit?: (ticket: Ticket) => void
+  onView?: (ticket: Ticket) => void
   sx?: SxProps<Theme>
 }
 
@@ -33,8 +35,10 @@ export default function TicketsTable({
   tickets,
   loading = false,
   onEdit,
+  onView,
   sx,
 }: TicketsTableProps) {
+  const hasActions = Boolean(onEdit || onView)
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -64,7 +68,7 @@ export default function TicketsTable({
             <TableCell>Status</TableCell>
             <TableCell>Priority</TableCell>
             <TableCell align="right">Created</TableCell>
-            {onEdit && <TableCell align="right">Actions</TableCell>}
+            {hasActions && <TableCell align="right">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -81,16 +85,30 @@ export default function TicketsTable({
               <TableCell align="right">
                 {formatDate(ticket.created_at)}
               </TableCell>
-              {onEdit && (
+              {hasActions && (
                 <TableCell align="right">
-                  <IconButton
-                    aria-label={`Edit ticket ${ticket.id}`}
-                    size="small"
-                    onClick={() => onEdit(ticket)}
-                    sx={{ color: '#d4af37' }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                    {onView && (
+                      <IconButton
+                        aria-label={`View ticket ${ticket.id}`}
+                        size="small"
+                        onClick={() => onView(ticket)}
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    {onEdit && (
+                      <IconButton
+                        aria-label={`Edit ticket ${ticket.id}`}
+                        size="small"
+                        onClick={() => onEdit(ticket)}
+                        sx={{ color: '#d4af37' }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
                 </TableCell>
               )}
             </TableRow>
