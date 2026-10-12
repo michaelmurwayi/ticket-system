@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
@@ -11,6 +11,11 @@ import CircularProgress from '@mui/material/CircularProgress'
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber'
 import { StatCard } from '../components/molecules/StatCard'
 import { Legend } from '../components/molecules/Legend'
+import {
+  TicketFilters,
+  type PriorityFilter,
+  type StatusFilter,
+} from '../components/molecules/TicketFilters'
 import { TicketsTable } from '../components/organisms/TicketsTable'
 import { fetchStatistics } from '../store/slices/statisticsSlice'
 import { fetchTickets } from '../store/slices/ticketsSlice'
@@ -50,6 +55,19 @@ export default function DashboardPage() {
 
   const isLoading = status === 'loading'
   const ticketsLoading = ticketsStatus === 'loading'
+
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+
+  const filteredTickets = useMemo(() => {
+    return tickets.filter((ticket) => {
+      const matchesPriority =
+        priorityFilter === 'all' || ticket.priority === priorityFilter
+      const matchesStatus =
+        statusFilter === 'all' || ticket.status === statusFilter
+      return matchesPriority && matchesStatus
+    })
+  }, [tickets, priorityFilter, statusFilter])
 
   const handleLogout = () => {
     dispatch(logout())
@@ -168,13 +186,29 @@ export default function DashboardPage() {
             mb: 3,
           }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            All Tickets
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              All Tickets
+            </Typography>
+            {!ticketsLoading && (
+              <Typography variant="body2" color="text.secondary">
+                Showing {filteredTickets.length} of {tickets.length} tickets
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
             <Legend title="Priority" items={priorityItems} />
             <Legend title="Status" items={statusItems} />
           </Box>
+        </Box>
+
+        <Box sx={{ mb: 3 }}>
+          <TicketFilters
+            priority={priorityFilter}
+            status={statusFilter}
+            onPriorityChange={setPriorityFilter}
+            onStatusChange={setStatusFilter}
+          />
         </Box>
 
         {ticketsStatus === 'failed' && (
@@ -195,7 +229,7 @@ export default function DashboardPage() {
           </Alert>
         )}
 
-        <TicketsTable tickets={tickets} loading={ticketsLoading} />
+        <TicketsTable tickets={filteredTickets} loading={ticketsLoading} />
       </Container>
     </Box>
   )
