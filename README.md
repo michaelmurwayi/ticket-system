@@ -1,5 +1,7 @@
 # Ticket System
 
+ <!--  SORRY I GOT CARRIED AWAY WITH FRONTEND DESIGN -->
+
 A full-stack ticketing system composed of two parts that work together:
 
 - **Backend API** — a Django REST framework application (`api/`).
