@@ -44,7 +44,7 @@ Open **three terminals** (or run the backend in the background):
 ```bash
 # Terminal 1 — Backend API
 cd api
-./env/bin/python manage.py migrate
+./env/bin/python manage.py migrate  # applies migrations + seeds dev users
 ./env/bin/python manage.py runserver 0.0.0.0:8000
 
 # Terminal 2 — Frontend dashboard
@@ -56,7 +56,8 @@ Once both are running:
 
 - Frontend (UI): **http://localhost:5173** — open, sign up or log in, manage tickets.
 - Backend API: **http://localhost:8000/api** — (plus `/api/admin/` for the Django admin).
-- Admin login: any superuser created with `createsuperuser` (Django's built-in auth).
+- Seeded logins: `user` / `user12345` (dashboard) and `admin` / `admin12345`
+  (superuser, Django admin) — see §1.3 below.
 
 ---
 
@@ -91,7 +92,8 @@ cd api
 ```
 
 This creates the `auth`, `contenttypes`, `sessions`, and `app` (Ticket) tables in
-`db.sqlite3`. On first clone there are no migrations for `app`, so run `makemigrations`
+`db.sqlite3`. It also runs the user seeders automatically (see §1.3 below).
+On first clone there are no migrations for `app`, so run `makemigrations`
 first if `Ticket` tables are missing:
 
 ```bash
@@ -99,13 +101,36 @@ first if `Ticket` tables are missing:
 ./env/bin/python manage.py migrate
 ```
 
-## 1.3 (Optional) Create an admin user
+## 1.3 Seed users (runs automatically with migrations)
 
-The API only requires an authenticated user to use the dashboard. For the Django
-admin (`/api/admin/`) create a **superuser**:
+`manage.py migrate` runs the `seed_users` seeder via a data migration in the
+`authentication` app, so the Quick start and §1.2 above already create these two
+development accounts:
+
+| Username | Password | Role |
+| --- | --- | --- |
+| `user` | `user12345` | Regular user — log in to the dashboard |
+| `admin` | `admin12345` | Superuser — Django admin at `/api/admin/` |
+
+The seeder is idempotent: re-running it skips accounts that already exist and
+never overwrites their passwords.
+
+To run the seeders manually at any time:
+
+```bash
+cd api
+./env/bin/python manage.py seed_users
+```
+
+To create a different superuser instead, use Django's built-in auth:
 
 ```bash
 ./env/bin/python manage.py createsuperuser
+```
+
+> The seeded credentials are for local development only — do not run the
+> seeder against a production database.
+
 ## 1.4 Run the development server
 
 ```bash
@@ -270,7 +295,7 @@ api/
 │   ├── utilitis/             # helpers (responses, sanitizers)
 │   └── tests/
 │       └── test_ticket_service.py
-├── authentication/           # Auth views (register, login, me, logout)
+├── authentication/           # Auth views + seed_users command (runs on migrate)
 ├── manage.py
 └── env/                      # Python virtualenv
 dashboard/
