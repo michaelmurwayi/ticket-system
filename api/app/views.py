@@ -33,9 +33,14 @@ class TicketViewSet(ModelViewSet):
     def get_queryset(self):
         if self.action in ("list", "statistics"):
             return TicketService.list_tickets(
-                params=self.request.query_params # type: ignore
+                params=self.request.query_params,
+                creator_id=self._list_creator_id(),
             )
         return Ticket.objects.select_related("created_by").all()
+
+    def _list_creator_id(self):
+        user = self.request.user
+        return None if user.is_superuser else user.id
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -142,7 +147,8 @@ class TicketViewSet(ModelViewSet):
     @action(detail=False, methods=["get"])
     def statistics(self, request):
         data = TicketService.get_statistics(
-            params=request.query_params
+            params=request.query_params,
+            creator_id=self._list_creator_id(),
         )
 
         return success_response(

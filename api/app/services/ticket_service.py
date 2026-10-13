@@ -39,11 +39,12 @@ class TicketService:
         })
 
     @staticmethod
-    def list_tickets(*, params):
+    def list_tickets(*, params, creator_id=None):
         return TicketRepository.list_tickets(
             status=params.get("status"),
             priority=params.get("priority"),
             search=params.get("search", "").strip(),
+            creator_id=creator_id,
         )
 
     @staticmethod
@@ -119,7 +120,10 @@ class TicketService:
         )
 
     @staticmethod
-    def get_statistics(*, params):
-        tickets = TicketService.list_tickets(params=params)
+    def get_statistics(*, params, creator_id=None):
+        tickets = TicketService.list_tickets(
+            params=params,
+            creator_id=creator_id,
+        )
 
         return TicketRepository.get_statistics(tickets)

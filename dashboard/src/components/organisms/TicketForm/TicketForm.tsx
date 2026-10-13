@@ -30,6 +30,7 @@ interface TicketFormProps {
   loadingLabel?: string
   isSubmitting?: boolean
   error?: string | null
+  canChangeStatus?: boolean
   onSubmit: (values: TicketFormValues) => void
   formSx?: SxProps<Theme>
   fieldSx?: SxProps<Theme>
@@ -37,16 +38,13 @@ interface TicketFormProps {
   alertSx?: SxProps<Theme>
 }
 
-/**
- * Reusable ticket form used for both creating and editing tickets.
- * Fully controlled via props so callers own the submit logic.
- */
 export default function TicketForm({
   initialValues,
   submitLabel = 'Save',
   loadingLabel = 'Saving…',
   isSubmitting = false,
   error,
+  canChangeStatus = true,
   onSubmit,
   formSx,
   fieldSx,
@@ -122,6 +120,8 @@ export default function TicketForm({
         label="Status"
         value={status}
         options={statusOptions}
+        disabled={!canChangeStatus}
+        helperText={canChangeStatus ? undefined : 'Only admins can change status'}
         sx={fieldSx}
         onChange={(value) => setStatus(value as TicketStatus)}
       />

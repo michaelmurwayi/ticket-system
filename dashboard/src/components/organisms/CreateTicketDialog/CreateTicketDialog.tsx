@@ -10,7 +10,6 @@ interface CreateTicketDialogProps {
   onClose: () => void
 }
 
-/** Modal dialog for creating a new ticket. */
 export default function CreateTicketDialog({
   open,
   onClose,

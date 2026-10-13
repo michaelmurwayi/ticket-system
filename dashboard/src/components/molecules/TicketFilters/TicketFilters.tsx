@@ -18,7 +18,6 @@ interface TicketFiltersProps {
   sx?: SxProps<Theme>
 }
 
-/** Priority + status dropdown filters for the tickets table. */
 export default function TicketFilters({
   priority,
   status,

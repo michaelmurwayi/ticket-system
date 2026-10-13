@@ -13,16 +13,19 @@ interface SelectFieldProps {
   value: string
   options: SelectOption[]
   onChange: (value: string) => void
+  disabled?: boolean
+  helperText?: string
   sx?: SxProps<Theme>
 }
 
-/** A reusable labeled select built on MUI TextField's `select` mode. */
 export default function SelectField({
   id,
   label,
   value,
   options,
   onChange,
+  disabled = false,
+  helperText,
   sx,
 }: SelectFieldProps) {
   return (
@@ -32,6 +35,8 @@ export default function SelectField({
       value={value}
       select
       fullWidth
+      disabled={disabled}
+      helperText={helperText}
       sx={sx}
       onChange={(event) => onChange(event.target.value)}
     >

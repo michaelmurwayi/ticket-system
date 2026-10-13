@@ -1,16 +1,9 @@
 import type { TicketPriority, TicketStatus } from '../store/types'
 
-/**
- * Shared color + label definitions for ticket priorities and statuses.
- * This is the single source of truth used by the chips, the table, and the
- * legend so colors stay consistent everywhere.
- */
 
 export interface BadgeMeta {
   label: string
-  /** Base color for text/border. */
   color: string
-  /** Translucent background derived from the color. */
   bg: string
 }
 
@@ -30,12 +23,10 @@ export const statusMeta: Record<TicketStatus, BadgeMeta> = {
   closed: { label: 'Closed', color: '#9e9e9e', bg: 'rgba(158, 158, 158, 0.15)' },
 }
 
-/** Human-friendly label for a status, falling back to the raw value. */
 export function statusLabel(status: string): string {
   return statusMeta[status as TicketStatus]?.label ?? status
 }
 
-/** Human-friendly label for a priority, falling back to the raw value. */
 export function priorityLabel(priority: string): string {
   return priorityMeta[priority as TicketPriority]?.label ?? priority
 }

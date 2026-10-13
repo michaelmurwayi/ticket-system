@@ -10,6 +10,7 @@ import {
   changeTicketStatus,
 } from '../../../store/slices/ticketsSlice'
 import { fetchStatistics } from '../../../store/slices/statisticsSlice'
+import { selectIsSuperuser } from '../../../store/slices/authSlice'
 import { useAppDispatch, useAppSelector } from '../../../store'
 import type { Ticket } from '../../../services/ticketService'
 
@@ -19,7 +20,6 @@ interface EditTicketDialogProps {
   onClose: () => void
 }
 
-/** Modal dialog for editing an existing ticket. */
 export default function EditTicketDialog({
   open,
   ticket,
@@ -27,13 +27,13 @@ export default function EditTicketDialog({
 }: EditTicketDialogProps) {
   const dispatch = useAppDispatch()
   const updateError = useAppSelector((state) => state.tickets.updateError)
+  const isSuperuser = useAppSelector(selectIsSuperuser)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (values: TicketFormValues) => {
     if (!ticket) return
     setIsSubmitting(true)
     try {
-      // General fields (title, description, priority) — status excluded.
       await dispatch(
         updateExistingTicket({
           id: ticket.id,
@@ -45,18 +45,15 @@ export default function EditTicketDialog({
         }),
       ).unwrap()
 
-      // Status is updated through its dedicated endpoint, only if it changed.
-      if (values.status !== ticket.status) {
+      if (isSuperuser && values.status !== ticket.status) {
         await dispatch(
           changeTicketStatus({ id: ticket.id, status: values.status }),
         ).unwrap()
       }
 
-      // Status/priority may have changed — keep the stat cards in sync.
       dispatch(fetchStatistics())
       onClose()
     } catch {
-      // Error message is surfaced from Redux state (updateError).
     } finally {
       setIsSubmitting(false)
     }
@@ -93,6 +90,7 @@ export default function EditTicketDialog({
             loadingLabel="Saving…"
             isSubmitting={isSubmitting}
             error={updateError}
+            canChangeStatus={isSuperuser}
             onSubmit={handleSubmit}
             formSx={{ mt: 1 }}
             buttonSx={{

@@ -4,8 +4,14 @@ import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import Grid from '@mui/material/Grid'
 import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
 import CircularProgress from '@mui/material/CircularProgress'
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber'
@@ -22,17 +28,22 @@ import { CreateTicketDialog } from '../components/organisms/CreateTicketDialog'
 import { EditTicketDialog } from '../components/organisms/EditTicketDialog'
 import { TicketDetailDialog } from '../components/organisms/TicketDetailDialog'
 import { fetchStatistics } from '../store/slices/statisticsSlice'
-import { fetchTickets } from '../store/slices/ticketsSlice'
-import { logout } from '../store/slices/authSlice'
+import {
+  fetchTickets,
+  changeTicketStatus,
+  deleteTicketById,
+  resetDeleteStatus,
+} from '../store/slices/ticketsSlice'
+import { logout, selectIsSuperuser } from '../store/slices/authSlice'
 import { priorityMeta, statusMeta } from '../theme'
 import { useAppDispatch, useAppSelector } from '../store'
 import type { Ticket } from '../services/ticketService'
 
 const ACCENT = {
-  total: '#d4af37', // gold
-  open: '#43a047', // green
-  inProgress: '#e6c65a', // light gold
-  closed: '#9e9e9e', // grey
+  total: '#d4af37',
+  open: '#43a047',
+  inProgress: '#e6c65a',
+  closed: '#9e9e9e',
 }
 
 const priorityItems = Object.values(priorityMeta)
@@ -46,8 +57,11 @@ export default function DashboardPage() {
     items: tickets,
     status: ticketsStatus,
     error: ticketsError,
+    deleteStatus,
+    deleteError,
   } = useAppSelector((state) => state.tickets)
   const username = useAppSelector((state) => state.auth.username)
+  const isSuperuser = useAppSelector(selectIsSuperuser)
 
   useEffect(() => {
     if (status === 'idle') {
@@ -66,6 +80,8 @@ export default function DashboardPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
   const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null)
+  const [closingTicket, setClosingTicket] = useState<Ticket | null>(null)
+  const [deletingTicket, setDeletingTicket] = useState<Ticket | null>(null)
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {
@@ -81,6 +97,29 @@ export default function DashboardPage() {
     dispatch(logout())
     navigate('/login', { replace: true })
   }
+
+  const handleConfirmClose = async () => {
+    if (!closingTicket) return
+    await dispatch(
+      changeTicketStatus({ id: closingTicket.id, status: 'closed' }),
+    ).unwrap().catch(() => {})
+    dispatch(fetchStatistics())
+    setClosingTicket(null)
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingTicket) return
+
+    try {
+      await dispatch(deleteTicketById(deletingTicket.id)).unwrap()
+      dispatch(fetchStatistics())
+    } catch {
+      // Error is surfaced through the slice's deleteError.
+    } finally {
+      setDeletingTicket(null)
+    }
+  }
+
 
   return (
     <Box sx={{ minHeight: '100svh', bgcolor: 'background.default' }}>
@@ -101,6 +140,18 @@ export default function DashboardPage() {
           Ticketing Dashboard
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {isSuperuser && (
+            <Chip
+              label="Admin"
+              size="small"
+              sx={{
+                color: '#d4af37',
+                bgcolor: 'rgba(212, 175, 55, 0.12)',
+                border: '1px solid #d4af37',
+                fontWeight: 600,
+              }}
+            />
+          )}
           {username && (
             <Typography variant="body2" color="text.secondary">
               {username}
@@ -263,11 +314,33 @@ export default function DashboardPage() {
           </Alert>
         )}
 
+        {deleteStatus === 'failed' && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => dispatch(resetDeleteStatus())}
+              >
+                Dismiss
+              </Button>
+            }
+          >
+            {deleteError}
+          </Alert>
+        )}
+
         <TicketsTable
           tickets={filteredTickets}
           loading={ticketsLoading}
           onView={setViewingTicket}
           onEdit={setEditingTicket}
+          canClose={isSuperuser}
+          onCloseTicket={setClosingTicket}
+          canDelete={isSuperuser}
+          onDelete={setDeletingTicket}
         />
       </Container>
 
@@ -285,6 +358,53 @@ export default function DashboardPage() {
         ticket={viewingTicket}
         onClose={() => setViewingTicket(null)}
       />
+
+      <Dialog
+        open={closingTicket !== null}
+        onClose={() => setClosingTicket(null)}
+      >
+        <DialogTitle>Close ticket</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to close ticket #{closingTicket?.id} &ldquo;
+            {closingTicket?.title}&rdquo;? This sets its status to closed.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClosingTicket(null)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmClose}
+            variant="contained"
+            sx={{ bgcolor: '#43a047', '&:hover': { bgcolor: '#2e7d32' } }}
+          >
+            Close ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deletingTicket !== null}
+        onClose={() => setDeletingTicket(null)}
+      >
+        <DialogTitle>Delete ticket</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to permanently delete ticket #
+            {deletingTicket?.id} &ldquo;{deletingTicket?.title}&rdquo;? This
+            action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingTicket(null)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' } }}
+          >
+            Delete ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

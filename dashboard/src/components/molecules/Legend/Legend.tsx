@@ -9,7 +9,6 @@ interface LegendProps {
   sx?: SxProps<Theme>
 }
 
-/** A color key/legend for a set of badge items (priority or status). */
 export default function Legend({ title, items, sx }: LegendProps) {
   return (
     <Box sx={{ ...(typeof sx === 'object' ? sx : {}) }}>

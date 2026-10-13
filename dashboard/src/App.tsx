@@ -5,7 +5,6 @@ import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import { useAppSelector } from './store'
 
-/** Redirects to /login when there is no active session. */
 function RequireAuth({ children }: { children: ReactElement }) {
   const isAuthenticated = useAppSelector(
     (state) => state.auth.status === 'succeeded',

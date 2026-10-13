@@ -18,8 +18,12 @@ class TicketRepository:
         status=None,
         priority=None,
         search=None,
+        creator_id=None,
     ):
         queryset = cls.get_queryset()
+
+        if creator_id is not None:
+            queryset = queryset.filter(created_by_id=creator_id)
 
         if status:
             queryset = queryset.filter(status=status)

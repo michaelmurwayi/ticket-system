@@ -10,8 +10,11 @@ import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
 import EditIcon from '@mui/icons-material/Edit'
 import VisibilityIcon from '@mui/icons-material/Visibility'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { PriorityChip } from '../../molecules/PriorityChip'
 import { StatusChip } from '../../molecules/StatusChip'
 import type { Ticket } from '../../../services/ticketService'
@@ -21,10 +24,13 @@ interface TicketsTableProps {
   loading?: boolean
   onEdit?: (ticket: Ticket) => void
   onView?: (ticket: Ticket) => void
+  canClose?: boolean
+  onCloseTicket?: (ticket: Ticket) => void
+  canDelete?: boolean
+  onDelete?: (ticket: Ticket) => void
   sx?: SxProps<Theme>
 }
 
-/** Formats an ISO date string to a readable locale date. */
 function formatDate(value?: string): string {
   if (!value) return '—'
   const date = new Date(value)
@@ -36,9 +42,15 @@ export default function TicketsTable({
   loading = false,
   onEdit,
   onView,
+  canClose = false,
+  onCloseTicket,
+  canDelete = false,
+  onDelete,
   sx,
 }: TicketsTableProps) {
-  const hasActions = Boolean(onEdit || onView)
+  const hasActions = Boolean(
+    onEdit || onView || (canClose && onCloseTicket) || (canDelete && onDelete),
+  )
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -107,6 +119,30 @@ export default function TicketsTable({
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
+                    )}
+                    {canClose && onCloseTicket && ticket.status !== 'closed' && (
+                      <Tooltip title="Close ticket">
+                        <IconButton
+                          aria-label={`Close ticket ${ticket.id}`}
+                          size="small"
+                          onClick={() => onCloseTicket(ticket)}
+                          sx={{ color: '#43a047' }}
+                        >
+                          <TaskAltIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {canDelete && onDelete && (
+                      <Tooltip title="Delete ticket (superuser only)">
+                        <IconButton
+                          aria-label={`Delete ticket ${ticket.id}`}
+                          size="small"
+                          onClick={() => onDelete(ticket)}
+                          sx={{ color: '#d32f2f' }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     )}
                   </Box>
                 </TableCell>

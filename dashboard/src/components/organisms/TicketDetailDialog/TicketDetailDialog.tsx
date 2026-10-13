@@ -18,7 +18,6 @@ interface TicketDetailDialogProps {
   onClose: () => void
 }
 
-// Fields rendered explicitly; anything else is shown dynamically below.
 const KNOWN_KEYS = new Set([
   'id',
   'title',
@@ -35,12 +34,10 @@ function formatDateTime(value?: string): string {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString()
 }
 
-/** Turns snake_case keys into a readable label. */
 function humanize(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-/** Renders arbitrary values (objects are JSON-stringified). */
 function renderValue(value: unknown): ReactNode {
   if (value === null || value === undefined || value === '') return '—'
   if (typeof value === 'object') return JSON.stringify(value)
@@ -68,7 +65,6 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-/** Read-only popup showing all details of a ticket. */
 export default function TicketDetailDialog({
   open,
   ticket,

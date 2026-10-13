@@ -29,7 +29,6 @@ export default function CreateTicketForm({
       await dispatch(createNewTicket(values)).unwrap()
       onSuccess?.()
     } catch {
-      // Error message is surfaced from Redux state (createError).
     } finally {
       setIsSubmitting(false)
     }

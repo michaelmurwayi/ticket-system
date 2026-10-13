@@ -5,6 +5,7 @@ import {
   createTicket,
   updateTicket,
   updateTicketStatus,
+  deleteTicket,
   type Ticket,
   type NewTicketInput,
   type UpdateTicketInput,
@@ -19,6 +20,8 @@ export interface TicketsState {
   createError: string | null
   updateStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
   updateError: string | null
+  deleteStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  deleteError: string | null
 }
 
 const initialState: TicketsState = {
@@ -29,9 +32,10 @@ const initialState: TicketsState = {
   createError: null,
   updateStatus: 'idle',
   updateError: null,
+  deleteStatus: 'idle',
+  deleteError: null,
 }
 
-/** Loads the full ticket list from the backend. */
 export const fetchTickets = createAsyncThunk<
   Ticket[],
   void,
@@ -47,7 +51,6 @@ export const fetchTickets = createAsyncThunk<
   }
 })
 
-/** Creates a new ticket and returns the created record. */
 export const createNewTicket = createAsyncThunk<
   Ticket,
   NewTicketInput,
@@ -63,7 +66,6 @@ export const createNewTicket = createAsyncThunk<
   }
 })
 
-/** Updates an existing ticket and returns the updated record. */
 export const updateExistingTicket = createAsyncThunk<
   Ticket,
   { id: Ticket['id']; payload: UpdateTicketInput },
@@ -79,7 +81,6 @@ export const updateExistingTicket = createAsyncThunk<
   }
 })
 
-/** Updates only a ticket's status via the dedicated status endpoint. */
 export const changeTicketStatus = createAsyncThunk<
   Ticket,
   { id: Ticket['id']; status: TicketStatus },
@@ -95,6 +96,22 @@ export const changeTicketStatus = createAsyncThunk<
   }
 })
 
+export const deleteTicketById = createAsyncThunk<
+  Ticket['id'],
+  Ticket['id'],
+  { rejectValue: string }
+>('tickets/delete', async (id, { rejectWithValue }) => {
+  try {
+    await deleteTicket(id)
+    return id
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return rejectWithValue(error.message)
+    }
+    return rejectWithValue('Failed to delete ticket.')
+  }
+})
+
 const ticketsSlice = createSlice({
   name: 'tickets',
   initialState,
@@ -106,6 +123,10 @@ const ticketsSlice = createSlice({
     resetUpdateStatus(state) {
       state.updateStatus = 'idle'
       state.updateError = null
+    },
+    resetDeleteStatus(state) {
+      state.deleteStatus = 'idle'
+      state.deleteError = null
     },
   },
   extraReducers: (builder) => {
@@ -130,7 +151,6 @@ const ticketsSlice = createSlice({
       .addCase(createNewTicket.fulfilled, (state, action) => {
         state.createStatus = 'succeeded'
         state.createError = null
-        // Prepend the new ticket so it appears at the top of the list.
         state.items.unshift(action.payload)
       })
       .addCase(createNewTicket.rejected, (state, action) => {
@@ -144,7 +164,6 @@ const ticketsSlice = createSlice({
       .addCase(updateExistingTicket.fulfilled, (state, action) => {
         state.updateStatus = 'succeeded'
         state.updateError = null
-        // Replace the matching ticket in place.
         const index = state.items.findIndex(
           (item) => item.id === action.payload.id,
         )
@@ -174,10 +193,27 @@ const ticketsSlice = createSlice({
         state.updateStatus = 'failed'
         state.updateError = action.payload ?? 'Failed to update status.'
       })
+      .addCase(deleteTicketById.pending, (state) => {
+        state.deleteStatus = 'loading'
+        state.deleteError = null
+      })
+      .addCase(deleteTicketById.fulfilled, (state, action) => {
+        state.deleteStatus = 'succeeded'
+        state.deleteError = null
+        state.items = state.items.filter((item) => item.id !== action.payload)
+      })
+      .addCase(deleteTicketById.rejected, (state, action) => {
+        state.deleteStatus = 'failed'
+        state.deleteError = action.payload ?? 'Failed to delete ticket.'
+      })
   },
 })
 
-export const { resetCreateStatus, resetUpdateStatus } = ticketsSlice.actions
+export const {
+  resetCreateStatus,
+  resetUpdateStatus,
+  resetDeleteStatus,
+} = ticketsSlice.actions
 
 export default ticketsSlice.reducer
 

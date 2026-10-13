@@ -22,7 +22,6 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const status = useAppSelector((state) => state.auth.status)
 
-  // Redirect to the dashboard once login succeeds.
   useEffect(() => {
     if (status === 'succeeded') {
       navigate('/dashboard', { replace: true })

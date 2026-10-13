@@ -14,7 +14,6 @@ const initialState: StatisticsState = {
   error: null,
 }
 
-/** Loads ticket statistics from the backend. */
 export const fetchStatistics = createAsyncThunk<
   TicketStatistics,
   void,

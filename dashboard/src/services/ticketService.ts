@@ -19,30 +19,23 @@ export interface TicketStatistics {
   closed: number
 }
 
-/** Envelope returned by the backend for the statistics endpoint. */
 interface StatisticsResponse {
   success: boolean
   message: string
   data: TicketStatistics
 }
 
-/**
- * Envelope returned by the backend for the ticket list endpoint. Handles both
- * `{ data: [...] }` and Django REST Framework pagination `{ results: [...] }`.
- */
 interface TicketsListResponse {
   data?: Ticket[]
   results?: Ticket[]
   [key: string]: unknown
 }
 
-/** Fetches ticket statistics (auth header attached automatically). */
 export async function getStatistics(): Promise<TicketStatistics> {
   const response = await apiRequest<StatisticsResponse>('/tickets/statistics/')
   return response.data
 }
 
-/** Fetches all tickets (auth header attached automatically). */
 export async function getTickets(): Promise<Ticket[]> {
   const response = await apiRequest<TicketsListResponse>('/tickets/')
   return response.data ?? response.results ?? []
@@ -55,13 +48,6 @@ export interface NewTicketInput {
   status: TicketStatus
 }
 
-/**
- * Creates a new ticket via POST /api/tickets/.
- *
- * NOTE: field names (`title`, `description`, `priority`, `status`) follow the
- * shape returned by the list endpoint. If your backend expects different
- * names, adjust NewTicketInput accordingly.
- */
 export async function createTicket(payload: NewTicketInput): Promise<Ticket> {
   const response = await apiRequest<{ data?: Ticket } & Ticket>('/tickets/', {
     method: 'POST',
@@ -70,20 +56,12 @@ export async function createTicket(payload: NewTicketInput): Promise<Ticket> {
   return (response.data ?? response) as Ticket
 }
 
-/**
- * Fields editable via the general ticket endpoint. Status is intentionally
- * excluded — it is updated through the dedicated status endpoint.
- */
 export interface UpdateTicketInput {
   title: string
   description: string
   priority: TicketPriority
 }
 
-/**
- * Updates a ticket's general fields via PATCH /api/tickets/{id}/.
- * Does NOT include status (see updateTicketStatus).
- */
 export async function updateTicket(
   id: Ticket['id'],
   payload: UpdateTicketInput,
@@ -98,10 +76,6 @@ export async function updateTicket(
   return (response.data ?? response) as Ticket
 }
 
-/**
- * Updates only a ticket's status via the dedicated endpoint
- * PATCH /api/tickets/{id}/status/ with body `{ status }`.
- */
 export async function updateTicketStatus(
   id: Ticket['id'],
   status: TicketStatus,
@@ -114,5 +88,11 @@ export async function updateTicketStatus(
     },
   )
   return (response.data ?? response) as Ticket
+}
+
+export async function deleteTicket(id: Ticket['id']): Promise<void> {
+  await apiRequest(`/tickets/${id}/`, {
+    method: 'DELETE',
+  })
 }
 
