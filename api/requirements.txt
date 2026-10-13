@@ -1,0 +1,7 @@
+# Backend API dependencies (Django REST backend)
+# Install in a virtualenv: ./env/bin/pip install -r requirements.txt
+
+Django==6.1.2
+djangorestframework==3.18.3
+django-cors-headers==4.9.0
+django-filter==26.2

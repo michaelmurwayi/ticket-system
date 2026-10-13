@@ -31,7 +31,7 @@ class Ticket(models.Model):
     priority = models.CharField(
         max_length=200,
         choices=Priority.choices,
-        default=Status.OPEN,
+        default=Priority.Low,
         
     )
     created_by = models.ForeignKey(

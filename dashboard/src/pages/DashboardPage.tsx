@@ -1,0 +1,410 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import Box from '@mui/material/Box'
+import Container from '@mui/material/Container'
+import Grid from '@mui/material/Grid'
+import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
+import Alert from '@mui/material/Alert'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
+import Divider from '@mui/material/Divider'
+import CircularProgress from '@mui/material/CircularProgress'
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber'
+import AddIcon from '@mui/icons-material/Add'
+import { StatCard } from '../components/molecules/StatCard'
+import { Legend } from '../components/molecules/Legend'
+import {
+  TicketFilters,
+  type PriorityFilter,
+  type StatusFilter,
+} from '../components/molecules/TicketFilters'
+import { TicketsTable } from '../components/organisms/TicketsTable'
+import { CreateTicketDialog } from '../components/organisms/CreateTicketDialog'
+import { EditTicketDialog } from '../components/organisms/EditTicketDialog'
+import { TicketDetailDialog } from '../components/organisms/TicketDetailDialog'
+import { fetchStatistics } from '../store/slices/statisticsSlice'
+import {
+  fetchTickets,
+  changeTicketStatus,
+  deleteTicketById,
+  resetDeleteStatus,
+} from '../store/slices/ticketsSlice'
+import { logout, selectIsSuperuser } from '../store/slices/authSlice'
+import { priorityMeta, statusMeta } from '../theme'
+import { useAppDispatch, useAppSelector } from '../store'
+import type { Ticket } from '../services/ticketService'
+
+const ACCENT = {
+  total: '#d4af37',
+  open: '#43a047',
+  inProgress: '#e6c65a',
+  closed: '#9e9e9e',
+}
+
+const priorityItems = Object.values(priorityMeta)
+const statusItems = Object.values(statusMeta)
+
+export default function DashboardPage() {
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+  const { data, status, error } = useAppSelector((state) => state.statistics)
+  const {
+    items: tickets,
+    status: ticketsStatus,
+    error: ticketsError,
+    deleteStatus,
+    deleteError,
+  } = useAppSelector((state) => state.tickets)
+  const username = useAppSelector((state) => state.auth.username)
+  const isSuperuser = useAppSelector(selectIsSuperuser)
+
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchStatistics())
+    }
+    if (ticketsStatus === 'idle') {
+      dispatch(fetchTickets())
+    }
+  }, [dispatch, status, ticketsStatus])
+
+  const isLoading = status === 'loading'
+  const ticketsLoading = ticketsStatus === 'loading'
+
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
+  const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null)
+  const [closingTicket, setClosingTicket] = useState<Ticket | null>(null)
+  const [deletingTicket, setDeletingTicket] = useState<Ticket | null>(null)
+
+  const filteredTickets = useMemo(() => {
+    return tickets.filter((ticket) => {
+      const matchesPriority =
+        priorityFilter === 'all' || ticket.priority === priorityFilter
+      const matchesStatus =
+        statusFilter === 'all' || ticket.status === statusFilter
+      return matchesPriority && matchesStatus
+    })
+  }, [tickets, priorityFilter, statusFilter])
+
+  const handleLogout = () => {
+    dispatch(logout())
+    navigate('/login', { replace: true })
+  }
+
+  const handleConfirmClose = async () => {
+    if (!closingTicket) return
+    await dispatch(
+      changeTicketStatus({ id: closingTicket.id, status: 'closed' }),
+    ).unwrap().catch(() => {})
+    dispatch(fetchStatistics())
+    setClosingTicket(null)
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingTicket) return
+
+    try {
+      await dispatch(deleteTicketById(deletingTicket.id)).unwrap()
+      dispatch(fetchStatistics())
+    } catch {
+      // Error is surfaced through the slice's deleteError.
+    } finally {
+      setDeletingTicket(null)
+    }
+  }
+
+
+  return (
+    <Box sx={{ minHeight: '100svh', bgcolor: 'background.default' }}>
+      <Box
+        component="header"
+        sx={{
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          px: { xs: 2, sm: 4 },
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+        }}
+      >
+        <Typography variant="h6" component="h1" sx={{ fontWeight: 700 }}>
+          Ticketing Dashboard
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {isSuperuser && (
+            <Chip
+              label="Admin"
+              size="small"
+              sx={{
+                color: '#d4af37',
+                bgcolor: 'rgba(212, 175, 55, 0.12)',
+                border: '1px solid #d4af37',
+                fontWeight: 600,
+              }}
+            />
+          )}
+          {username && (
+            <Typography variant="body2" color="text.secondary">
+              {username}
+            </Typography>
+          )}
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleLogout}
+            sx={{ color: '#d4af37', borderColor: '#d4af37' }}
+          >
+            Log out
+          </Button>
+        </Box>
+      </Box>
+
+      <Container maxWidth="lg" sx={{ py: { xs: 3, sm: 5 } }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+          Overview
+        </Typography>
+
+        {status === 'failed' && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => dispatch(fetchStatistics())}
+              >
+                Retry
+              </Button>
+            }
+          >
+            {error}
+          </Alert>
+        )}
+
+        {isLoading && !data && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress sx={{ color: '#d4af37' }} />
+          </Box>
+        )}
+
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              label="Total Tickets"
+              value={data?.total ?? 0}
+              accentColor={ACCENT.total}
+              loading={isLoading && !data}
+              icon={<ConfirmationNumberIcon fontSize="large" />}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              label="Open"
+              value={data?.open ?? 0}
+              accentColor={ACCENT.open}
+              loading={isLoading && !data}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              label="In Progress"
+              value={data?.in_progress ?? 0}
+              accentColor={ACCENT.inProgress}
+              loading={isLoading && !data}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              label="Closed"
+              value={data?.closed ?? 0}
+              accentColor={ACCENT.closed}
+              loading={isLoading && !data}
+            />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: { xs: 3, sm: 5 } }} />
+
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              All Tickets
+            </Typography>
+            {!ticketsLoading && (
+              <Typography variant="body2" color="text.secondary">
+                Showing {filteredTickets.length} of {tickets.length} tickets
+              </Typography>
+            )}
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsCreateOpen(true)}
+            sx={{
+              bgcolor: '#000000',
+              color: '#d4af37',
+              border: '2px solid #ffffff',
+              '&:hover': {
+                bgcolor: '#43a047',
+                color: '#ffffff',
+                borderColor: '#43a047',
+              },
+            }}
+          >
+            New Ticket
+          </Button>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <TicketFilters
+            priority={priorityFilter}
+            status={statusFilter}
+            onPriorityChange={setPriorityFilter}
+            onStatusChange={setStatusFilter}
+          />
+          <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <Legend title="Priority" items={priorityItems} />
+            <Legend title="Status" items={statusItems} />
+          </Box>
+        </Box>
+
+        {ticketsStatus === 'failed' && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => dispatch(fetchTickets())}
+              >
+                Retry
+              </Button>
+            }
+          >
+            {ticketsError}
+          </Alert>
+        )}
+
+        {deleteStatus === 'failed' && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => dispatch(resetDeleteStatus())}
+              >
+                Dismiss
+              </Button>
+            }
+          >
+            {deleteError}
+          </Alert>
+        )}
+
+        <TicketsTable
+          tickets={filteredTickets}
+          loading={ticketsLoading}
+          onView={setViewingTicket}
+          onEdit={setEditingTicket}
+          canClose={isSuperuser}
+          onCloseTicket={setClosingTicket}
+          canDelete={isSuperuser}
+          onDelete={setDeletingTicket}
+        />
+      </Container>
+
+      <CreateTicketDialog
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+      />
+      <EditTicketDialog
+        open={editingTicket !== null}
+        ticket={editingTicket}
+        onClose={() => setEditingTicket(null)}
+      />
+      <TicketDetailDialog
+        open={viewingTicket !== null}
+        ticket={viewingTicket}
+        onClose={() => setViewingTicket(null)}
+      />
+
+      <Dialog
+        open={closingTicket !== null}
+        onClose={() => setClosingTicket(null)}
+      >
+        <DialogTitle>Close ticket</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to close ticket #{closingTicket?.id} &ldquo;
+            {closingTicket?.title}&rdquo;? This sets its status to closed.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClosingTicket(null)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmClose}
+            variant="contained"
+            sx={{ bgcolor: '#43a047', '&:hover': { bgcolor: '#2e7d32' } }}
+          >
+            Close ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deletingTicket !== null}
+        onClose={() => setDeletingTicket(null)}
+      >
+        <DialogTitle>Delete ticket</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to permanently delete ticket #
+            {deletingTicket?.id} &ldquo;{deletingTicket?.title}&rdquo;? This
+            action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingTicket(null)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' } }}
+          >
+            Delete ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  )
+}

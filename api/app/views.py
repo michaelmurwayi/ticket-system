@@ -1,36 +1,47 @@
 from django.shortcuts import render
 
-# Create your views here.
+from django.utils.decorators import method_decorator
 
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-
+ 
 from app.models import Ticket
 from app.serializers import TicketSerializer
 from app.services.ticket_service import TicketService
 from app.utilitis.responses import success_response
 from app.pagination import TicketPagination
-
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authentication import SessionAuthentication
+from app.permissions import IsTicketOwnerOrReadOnly, SAFE_METHODS
 
 class TicketViewSet(ModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = TicketPagination
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [
+        IsAuthenticated,
+        IsTicketOwnerOrReadOnly,
+    ]
 
     queryset = Ticket.objects.none()
 
     def get_queryset(self):
         if self.action in ("list", "statistics"):
             return TicketService.list_tickets(
-                params=self.request.query_params # type: ignore
+                params=self.request.query_params,
+                creator_id=self._list_creator_id(),
             )
         return Ticket.objects.select_related("created_by").all()
 
+    def _list_creator_id(self):
+        user = self.request.user
+        return None if user.is_superuser else user.id
+    
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -100,6 +111,19 @@ class TicketViewSet(ModelViewSet):
             message="Ticket updated successfully.",
         )
 
+    def destroy(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Only superusers can delete tickets.")
+
+        instance = self.get_object()
+        instance.delete()
+
+        return success_response(
+            data=None,
+            message="Ticket deleted successfully.",
+            status_code=status.HTTP_200_OK,
+        )
+
     @action(detail=True, methods=["patch"], url_path="status")
     def update_status(self, request, pk=None):
         ticket = self.get_object()
@@ -123,7 +147,8 @@ class TicketViewSet(ModelViewSet):
     @action(detail=False, methods=["get"])
     def statistics(self, request):
         data = TicketService.get_statistics(
-            params=request.query_params
+            params=request.query_params,
+            creator_id=self._list_creator_id(),
         )
 
         return success_response(

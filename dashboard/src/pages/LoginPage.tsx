@@ -1,9 +1,12 @@
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import Link from '@mui/material/Link'
 import { LoginForm } from '../components/organisms/LoginForm'
+import { useAppSelector } from '../store'
 import {
   authAlertSx,
   authButtonSx,
@@ -16,6 +19,15 @@ import {
 } from './authStyles'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
+  const status = useAppSelector((state) => state.auth.status)
+
+  useEffect(() => {
+    if (status === 'succeeded') {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [status, navigate])
+
   return (
     <Box sx={authPageSx}>
       <Container maxWidth="xs" disableGutters>
@@ -53,5 +65,6 @@ export default function LoginPage() {
     </Box>
   )
 }
+
 
 

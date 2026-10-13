@@ -28,11 +28,6 @@ const initialState: SignupState = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/**
- * Registers a new account via the backend API. Performs client-side validation
- * first, then delegates to the auth service. On failure it rejects with a
- * human-readable reason for the UI alert.
- */
 export const signup = createAsyncThunk<
   { username: string },
   SignupCredentials,

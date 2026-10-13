@@ -1,26 +1,17 @@
 import { createTheme, type ThemeOptions } from '@mui/material/styles'
 import { red } from '@mui/material/colors'
 
-/**
- * Dark theme for the ticketing dashboard.
- *
- * Design tokens:
- * - Gold (#d4af37) — accent text and primary actions
- * - Green (#2e7d32 / #43a047) — hover / success states
- * - Black buttons with a white outline
- * - All text uses light, high-contrast colors for visibility on dark surfaces
- */
 const themeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
-      main: '#d4af37', // gold
+      main: '#d4af37',
       light: '#e6c65a',
       dark: '#b8941f',
       contrastText: '#0d0d0d',
     },
     secondary: {
-      main: '#43a047', // green
+      main: '#43a047',
       light: '#66bb6a',
       dark: '#2e7d32',
       contrastText: '#ffffff',

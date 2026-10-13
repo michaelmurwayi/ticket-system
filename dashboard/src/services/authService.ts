@@ -4,6 +4,7 @@ import {
   loadCredentials,
   type StoredCredentials,
 } from './authStorage'
+import { getCsrfToken, isUnsafeMethod } from './csrf'
 
 export interface LoginRequest {
   username: string
@@ -25,7 +26,6 @@ export interface LoginResponse {
   [key: string]: unknown
 }
 
-/** Error thrown for non-2xx or network failures; carries a UI-ready message. */
 export class ApiError extends Error {
   readonly status?: number
 
@@ -36,11 +36,6 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Extracts a human-readable message from common Django REST Framework
- * error shapes, e.g. `{ detail }`, `{ non_field_errors: [...] }`,
- * or field-level `{ username: [...] }`.
- */
 function extractErrorMessage(data: unknown, fallback: string): string {
   if (!data || typeof data !== 'object') return fallback
 
@@ -59,18 +54,10 @@ function extractErrorMessage(data: unknown, fallback: string): string {
 interface RequestOptions {
   method?: string
   body?: unknown
-  /** Override auth (e.g. skip for the login call itself). */
   credentials?: StoredCredentials | null
   headers?: Record<string, string>
 }
 
-/**
- * Generic API request wrapper used by ALL calls.
- *
- * Automatically attaches `Authorization: Basic <base64(user:pass)>` using the
- * stored credentials (unless overridden), sends/receives JSON, and throws an
- * `ApiError` with a readable message on network failure or non-2xx responses.
- */
 export async function apiRequest<T = unknown>(
   path: string,
   {
@@ -96,12 +83,19 @@ export async function apiRequest<T = unknown>(
   if (auth) {
     requestHeaders.Authorization = buildBasicAuthHeader(auth)
   }
+  if (isUnsafeMethod(method)) {
+    const csrfToken = getCsrfToken()
+    if (csrfToken) {
+      requestHeaders['X-CSRFToken'] = csrfToken
+    }
+  }
 
   let response: Response
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers: requestHeaders,
+      credentials: 'include',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
@@ -132,33 +126,23 @@ export interface SignupRequest {
   re_password: string
 }
 
-/**
- * Registers a new account at the backend's register endpoint
- * (`/auth/register/`). Expects `username`, `email`, `password`, and
- * `re_password`. If your backend uses different field names, adjust the
- * SignupRequest shape accordingly.
- */
 export async function signupRequest(
   payload: SignupRequest,
 ): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/auth/register/', {
     method: 'POST',
     body: payload,
-    credentials: null, // no auth needed to create an account
+    credentials: null,
   })
 }
 
-/**
- * Calls the login endpoint. Credentials are sent in the JSON body (per the
- * endpoint contract) — the Basic Auth header is intentionally omitted here.
- */
 export async function loginRequest(
   credentials: LoginRequest,
 ): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/auth/login/', {
     method: 'POST',
     body: credentials,
-    credentials: null, // don't send Basic Auth on the login call itself
+    credentials: null,
   })
 }
 
